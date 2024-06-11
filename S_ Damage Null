@@ -1,0 +1,64 @@
+{ Game   : Selaco.exe
+  Version:
+  Date   : 2024-06-11
+  Author : User
+
+  This script prevents the player from taking damage by bypassing the damage subtraction instruction.
+}
+
+[ENABLE]
+
+aobscanmodule(NoDamage,Selaco.exe,44 29 B3 A0 00 00 00) // should be unique
+alloc(newmem,$1000,NoDamage)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  // Replace the subtraction with NOPs to prevent damage
+  nop 7
+  jmp return
+
+NoDamage:
+  jmp newmem
+  nop 2
+return:
+registersymbol(NoDamage)
+
+[DISABLE]
+
+NoDamage:
+  db 44 29 B3 A0 00 00 00
+
+unregistersymbol(NoDamage)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: Selaco.exe+25B916
+
+Selaco.exe+25B8F1: 75 08                 - jne Selaco.exe+25B8FB
+Selaco.exe+25B8F3: 39 35 A7 62 EC 00     - cmp [Selaco.exe+1121BA0],esi
+Selaco.exe+25B8F9: 74 1B                 - je Selaco.exe+25B916
+Selaco.exe+25B8FB: 39 B3 48 01 00 00     - cmp [rbx+00000148],esi
+Selaco.exe+25B901: 75 13                 - jne Selaco.exe+25B916
+Selaco.exe+25B903: 41 8B D6              - mov edx,r14d
+Selaco.exe+25B906: 48 8B CB              - mov rcx,rbx
+Selaco.exe+25B909: 2B 93 A0 00 00 00     - sub edx,[rbx+000000A0]
+Selaco.exe+25B90F: FF C2                 - inc edx
+Selaco.exe+25B911: E8 8A 1A 00 00        - call Selaco.exe+25D3A0
+// ---------- INJECTING HERE ----------
+Selaco.exe+25B916: 44 29 B3 A0 00 00 00  - sub [rbx+000000A0],r14d
+// ---------- DONE INJECTING  ----------
+Selaco.exe+25B91D: 48 8B 03              - mov rax,[rbx]
+Selaco.exe+25B920: 44 29 B0 98 02 00 00  - sub [rax+00000298],r14d
+Selaco.exe+25B927: 8B 80 98 02 00 00     - mov eax,[rax+00000298]
+Selaco.exe+25B92D: 41 89 87 98 02 00 00  - mov [r15+00000298],eax
+Selaco.exe+25B934: 83 BB A0 00 00 00 32  - cmp dword ptr [rbx+000000A0],32
+Selaco.exe+25B93B: 7D 24                 - jnl Selaco.exe+25B961
+Selaco.exe+25B93D: 39 35 5D 62 EC 00     - cmp [Selaco.exe+1121BA0],esi
+Selaco.exe+25B943: 75 1C                 - jne Selaco.exe+25B961
+Selaco.exe+25B945: 45 85 E4              - test r12d,r12d
+Selaco.exe+25B948: 75 17                 - jne Selaco.exe+25B961
+}
