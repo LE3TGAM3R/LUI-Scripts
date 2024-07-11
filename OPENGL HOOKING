@@ -1,0 +1,46 @@
+bool contextCreated = false;
+HGLRC myContext;
+HGLRC gameContext
+
+//hooked SwapBuffers. This is x64 but it also works for x86
+int64_t HkHwglSwapBuffers(HDC hdc)
+{
+    //Save the games context
+    gameContext = wglGetCurrentContext();
+
+    //Create our own context if it hasn't been created yet
+    if (contextCreated == false)
+    {
+        //Create new context
+        myContext = wglCreateContext(hdc);
+       
+        //Make thread use our context
+        wglMakeCurrent(hdc, myContext);
+       
+        //Setup our context
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(0.0, 640, 480, 0.0, 1.0, -1.0);  //might want to make these your actual screen resolution
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        glClearColor(0, 0, 0, 1.0);
+    }
+   
+    //Make thread use our context
+    wglMakeCurrent(hdc, myContext);
+   
+    //Draw something (a rectangle here)
+    glColor3f(1.0f, 0, 0);
+    glBegin(GL_QUADS);
+    glVertex2f(0, 190.0f);
+    glVertex2f(100.0f, 190.0f);
+    glVertex2f(100.0f, 290.0f);
+    glVertex2f(0, 290.0f);
+    glEnd();
+
+    //Make thread to use games context again
+    wglMakeCurrent(hdc, oldContext);
+
+    //return to orginal swapbuffers
+    return oOpenGLReturn(hdc);
+}
